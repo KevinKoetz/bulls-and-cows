@@ -62,7 +62,7 @@ const App: FC<Partial<AppState>> = ({
             type: "round",
             round: {
               numGuesses: result.numGuesses,
-              message: `Your Function needed ${result.numGuesses} to find the number`,
+              message: `Your Function needed ${result.numGuesses} guesses to find the number`,
               correctGuess: true,
               guess: state.round.number
             },
