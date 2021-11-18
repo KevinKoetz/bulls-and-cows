@@ -7,24 +7,27 @@ const GuessInterface: FC<{
   guessState: string;
   setGuess: (guess: string) => void;
   onTakeGuess: () => void;
-  onSubmitGuessFunction: (fnc: GuessingFunction) => void;
+  onSubmitGuessFunction: () => void;
+  guessFunctionBody: string;
+  setGuessFunctionBody: (guessFunctionBody: string) => void;
   disabled: boolean;
 }> = ({
   disabled,
   onTakeGuess,
   guessState,
   onSubmitGuessFunction,
+  guessFunctionBody,
+  setGuessFunctionBody,
   setGuess,
   difficultyLevel,
 }): ReactElement => {
-  const [guessFunctionBody, setGuessFunctionBody] = useState("");
   return (
     <section className="GuessInterface">
       {difficultyLevel === "PROg(r)amer" ? (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSubmitGuessFunction(createGuessFunction(guessFunctionBody));
+            onSubmitGuessFunction();
           }}
         >
           <label htmlFor="guessFunction" style={{ display: "block" }}>

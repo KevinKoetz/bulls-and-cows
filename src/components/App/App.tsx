@@ -11,11 +11,13 @@ import {
   AppState,
   DifficultyLevel,
   GuessingFunction,
+  GuessingFunctionRunnerResponse,
 } from "../../common/Types";
 import History from "../History/History";
 import Description from "../Description/Description";
 import Options from "../Options/Options";
 import GuessInterface from "../GuessInterface/GuessInterface";
+import GuessFunctionRunner from "../../common/guessingFunctionRunner";
 
 const App: FC<Partial<AppState>> = ({
   options: defaultOptions = { playerName: "Stranger", difficultyLevel: "Easy" },
@@ -27,15 +29,14 @@ const App: FC<Partial<AppState>> = ({
     message: "Take a guess!",
     bulls: 0,
     cows: 0,
+    guessFunctionBody: "",
   },
   history: defaultHistory = [],
-  guessingFunction = null,
 }): ReactElement => {
   const [state, dispatch] = useReducer(reducer, {
     options: defaultOptions,
     round: defaultRound,
     history: defaultHistory,
-    guessingFunction,
   });
 
   useLayoutEffect(() => {
@@ -44,7 +45,7 @@ const App: FC<Partial<AppState>> = ({
     dispatch({ type: "history", history });
   }, []);
 
-  useEffect(() => {
+  /*   useEffect(() => {
     console.log(state.guessingFunction)
     if (state.guessingFunction) {
       const result = runGuessingFunction(
@@ -77,7 +78,7 @@ const App: FC<Partial<AppState>> = ({
         }
       }
     }
-  }, [state.guessingFunction, state.round.number]);
+  }, [state.guessingFunction, state.round.number]); */
 
   return (
     <div className="App">
@@ -101,11 +102,16 @@ const App: FC<Partial<AppState>> = ({
         guessState={state.round.guess}
         setGuess={(guess) => dispatch({ type: "round", round: { guess } })}
         disabled={state.round.correctGuess}
-        onSubmitGuessFunction={(guessingFunction) =>
-          dispatch({
-            type: "handleGuessFunctionSubmit",
-            guessFunction: guessingFunction,
-          })
+        onSubmitGuessFunction={() =>
+          handleGuessFunctionSubmit(
+            dispatch,
+            state.round.number,
+            state.round.guessFunctionBody
+          )
+        }
+        guessFunctionBody={state.round.guessFunctionBody}
+        setGuessFunctionBody={(guessFunctionBody) =>
+          dispatch({ type: "round", round: { guessFunctionBody } })
         }
         onTakeGuess={() => {
           const guessResults = getGuessResult(state);
@@ -131,7 +137,7 @@ const App: FC<Partial<AppState>> = ({
         value="New Round"
         disabled={!state.round.correctGuess}
         onClick={() => {
-          dispatch({type:"resetGuessFunction"})
+          dispatch({ type: "resetGuessFunction" });
           dispatch({
             type: "round",
             round: {
@@ -164,6 +170,59 @@ const App: FC<Partial<AppState>> = ({
   );
 };
 
+function handleGuessFunctionSubmit(
+  dispatch: React.Dispatch<DispatchAction>,
+  number: string,
+  guessFunctionBody: string
+) {
+  const code = GuessFunctionRunner.toString();
+  const blob = new Blob(["(" + code + ")()"]);
+  const worker = new Worker(URL.createObjectURL(blob));
+  let receivedMsg = false;
+  worker.onmessage = (msg) => {
+    receivedMsg = true;
+    const data = msg.data as GuessingFunctionRunnerResponse;
+    switch (data.type) {
+      case "result":
+        if (data.correctGuess) {
+          dispatch({
+            type: "round",
+            round: {
+              numGuesses: data.numGuesses,
+              message: `Your Function needed ${data.numGuesses} guesses to find the number`,
+              correctGuess: true,
+              guess: number,
+            },
+          });
+        } else {
+          dispatch({
+            type: "round",
+            round: {
+              message: `Your Function has not found the correct Number after ${data.numGuesses} guesses. Try changing it.`,
+            },
+          });
+        }
+        break;
+    }
+    worker.terminate()
+  };
+  worker.postMessage({
+    type: "runFunction",
+    payload: { functionBody: guessFunctionBody, number: number },
+  });
+  setTimeout(() => {
+    if (!receivedMsg) {
+      worker.terminate()
+      dispatch({
+        type: "round",
+        round: {
+          message: `It seems like your function is too slow or contains an infinite loop, try changing it. It took more than 5s to complete.`,
+        },
+      });
+    }
+  }, 5000);
+}
+
 function reducer(oldState: AppState, action: DispatchAction): AppState {
   switch (action.type) {
     case "options":
@@ -181,16 +240,6 @@ function reducer(oldState: AppState, action: DispatchAction): AppState {
       };
     case "history":
       return { ...oldState, history: action.history };
-    case "handleGuessFunctionSubmit":
-      return {
-        ...oldState,
-        guessingFunction: action.guessFunction
-      };
-    case "resetGuessFunction":
-      return {
-        ...oldState,
-        guessingFunction: null,
-      }
     default:
       return oldState;
   }

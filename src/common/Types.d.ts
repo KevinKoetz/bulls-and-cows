@@ -9,7 +9,6 @@ declare namespace Types {
   type AppState = {
     options: OptionsState;
     round: RoundState;
-    guessingFunction: GuessingFunction | null;
     history: HistoryEntry[];
   };
 
@@ -23,6 +22,7 @@ declare namespace Types {
     correctGuess: boolean;
     guess: string;
     numGuesses: number;
+    guessFunctionBody: string;
     message: string;
     bulls: number;
     cows: number;
@@ -43,6 +43,13 @@ declare namespace Types {
     | { type: "history"; history: HistoryEntry[] }
     | { type: "handleGuessFunctionSubmit"; guessFunction: GuessingFunction }
     | { type: "resetGuessFunction" };
+
+  type GuessingFunctionRunnerMessage =
+    | { type: "ping" }
+    | { type: "runFunction", payload:{functionBody: string, number: string} };
+  type GuessingFunctionRunnerResponse =
+    | { type: "pong" }
+    | { type: "result", correctGuess: boolean, numGuesses: number };
 }
 
 export = Types;
