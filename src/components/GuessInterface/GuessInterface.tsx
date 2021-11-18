@@ -1,5 +1,5 @@
-import React, { FC, ReactElement } from "react";
-import { DifficultyLevel } from "../../common/Types";
+import React, { FC, ReactElement, useState } from "react";
+import { DifficultyLevel, GuessingFunction } from "../../common/Types";
 import "./GuessInterface.css";
 
 const GuessInterface: FC<{
@@ -7,45 +7,80 @@ const GuessInterface: FC<{
   guessState: string;
   setGuess: (guess: string) => void;
   onTakeGuess: () => void;
+  onSubmitGuessFunction: (fnc: GuessingFunction) => void;
   disabled: boolean;
 }> = ({
   disabled,
   onTakeGuess,
   guessState,
+  onSubmitGuessFunction,
   setGuess,
   difficultyLevel,
 }): ReactElement => {
+  const [guessFunctionBody, setGuessFunctionBody] = useState("");
   return (
     <section className="GuessInterface">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onTakeGuess();
-        }}
-      >
-        <label htmlFor="guess">
-          Your Guess:
-          <input
-            autoComplete="off"
-            type="string"
-            name="guess"
-            value={guessState}
-            onChange={(event) =>
-              (containsOnlyDigits(event.target.value) ||
-                event.target.value === "") &&
-              event.target.value.length <= 4 &&
-              setGuess(event.target.value)
+      {difficultyLevel === "PROg(r)amer" ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmitGuessFunction(createGuessFunction(guessFunctionBody));
+          }}
+        >
+          <label htmlFor="guessFunction" style={{ display: "block" }}>
+            {
+              "function (lastGuess:{guess: string, bulls: number, cows:number}, memory:any){"
             }
+            <br />
+            {"const result = {guess: '', memory: undefined"}
+          </label>
+          <textarea
+            style={{ display: "block" }}
+            onChange={(e) => setGuessFunctionBody(e.target.value)}
+            value={guessFunctionBody}
             disabled={disabled}
-            placeholder="4 Digit Number"
+          ></textarea>
+          {"return result:{guess: string, memory: any}"}
+          <br />
+          {"}"}
+          <input
+            type="submit"
+            value="Submit Function"
+            disabled={disabled}
+            style={{ display: "block" }}
           />
-        </label>
-        <input
-          type="submit"
-          value="Take Guess"
-          disabled={disabled || !isValidGuess(guessState, difficultyLevel)}
-        />
-      </form>
+        </form>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onTakeGuess();
+          }}
+        >
+          <label htmlFor="guess">
+            Your Guess:
+            <input
+              autoComplete="off"
+              type="string"
+              name="guess"
+              value={guessState}
+              onChange={(event) =>
+                (containsOnlyDigits(event.target.value) ||
+                  event.target.value === "") &&
+                event.target.value.length <= 4 &&
+                setGuess(event.target.value)
+              }
+              disabled={disabled}
+              placeholder="4 Digit Number"
+            />
+          </label>
+          <input
+            type="submit"
+            value="Take Guess"
+            disabled={disabled || !isValidGuess(guessState, difficultyLevel)}
+          />
+        </form>
+      )}
     </section>
   );
 };
@@ -70,4 +105,16 @@ function guessHasUniqueDigits(guess: string) {
 
 function containsOnlyDigits(guess: string) {
   return guess.match(/[0-9]/g)?.join("") === guess;
+}
+
+function createGuessFunction(guessFunctionBody: string) {
+  return (
+    lastGuess: { guess: string; bulls: number; cows: number },
+    memory: any
+  ) => {
+    const result = { guess: "", memory: undefined };
+    // eslint-disable-next-line no-eval
+    eval(guessFunctionBody);
+    return result;
+  };
 }

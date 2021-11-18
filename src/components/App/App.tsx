@@ -3,9 +3,15 @@ import React, {
   FC,
   ReactElement,
   useLayoutEffect,
+  useEffect,
 } from "react";
 import "./App.css";
-import { DispatchAction, AppState, DifficultyLevel } from "../../common/Types";
+import {
+  DispatchAction,
+  AppState,
+  DifficultyLevel,
+  GuessingFunction,
+} from "../../common/Types";
 import History from "../History/History";
 import Description from "../Description/Description";
 import Options from "../Options/Options";
@@ -17,18 +23,19 @@ const App: FC<Partial<AppState>> = ({
     number: generateNumber(defaultOptions.difficultyLevel),
     correctGuess: false,
     guess: "",
-    guessingFunction: null,
     numGuesses: 0,
     message: "Take a guess!",
     bulls: 0,
     cows: 0,
   },
   history: defaultHistory = [],
+  guessingFunction = null,
 }): ReactElement => {
   const [state, dispatch] = useReducer(reducer, {
     options: defaultOptions,
     round: defaultRound,
     history: defaultHistory,
+    guessingFunction,
   });
 
   useLayoutEffect(() => {
@@ -36,6 +43,41 @@ const App: FC<Partial<AppState>> = ({
     const history = historyString ? JSON.parse(historyString) : [];
     dispatch({ type: "history", history });
   }, []);
+
+  useEffect(() => {
+    console.log(state.guessingFunction)
+    if (state.guessingFunction) {
+      const result = runGuessingFunction(
+        state.guessingFunction,
+        state.round.number
+      );
+      if ("error" in result) {
+        dispatch({
+          type: "round",
+          round: { message: result.error.toString() },
+        });
+      } else {
+        if (result.foundNumber) {
+          dispatch({
+            type: "round",
+            round: {
+              numGuesses: result.numGuesses,
+              message: `Your Function needed ${result.numGuesses} to find the number`,
+              correctGuess: true,
+              guess: state.round.number
+            },
+          });
+        } else {
+          dispatch({
+            type: "round",
+            round: {
+              message: `Your Function has not found the correct Number after ${result.numGuesses} guesses. Try changing it.`,
+            },
+          });
+        }
+      }
+    }
+  }, [state.guessingFunction, state.round.number]);
 
   return (
     <div className="App">
@@ -59,13 +101,21 @@ const App: FC<Partial<AppState>> = ({
         guessState={state.round.guess}
         setGuess={(guess) => dispatch({ type: "round", round: { guess } })}
         disabled={state.round.correctGuess}
+        onSubmitGuessFunction={(guessingFunction) =>
+          dispatch({
+            type: "handleGuessFunctionSubmit",
+            guessFunction: guessingFunction,
+          })
+        }
         onTakeGuess={() => {
           const guessResults = getGuessResult(state);
           console.log({ ...state, ...guessResults });
-          const newMessage = generateMessage({ ...state, round:{...state.round,...guessResults} })
+          const newMessage = generateMessage({
+            ...state,
+            round: { ...state.round, ...guessResults },
+          });
           console.log(newMessage);
-          
-          
+
           dispatch({
             type: "round",
             round: {
@@ -81,6 +131,7 @@ const App: FC<Partial<AppState>> = ({
         value="New Round"
         disabled={!state.round.correctGuess}
         onClick={() => {
+          dispatch({type:"resetGuessFunction"})
           dispatch({
             type: "round",
             round: {
@@ -130,8 +181,42 @@ function reducer(oldState: AppState, action: DispatchAction): AppState {
       };
     case "history":
       return { ...oldState, history: action.history };
+    case "handleGuessFunctionSubmit":
+      return {
+        ...oldState,
+        guessingFunction: action.guessFunction
+      };
+    case "resetGuessFunction":
+      return {
+        ...oldState,
+        guessingFunction: null,
+      }
     default:
       return oldState;
+  }
+}
+
+function runGuessingFunction(
+  guessingFunction: GuessingFunction,
+  number: string
+) {
+  try {
+    const maxIterations = 10000;
+    let i = 1;
+    const lastGuess = { guess: "", bulls: 0, cows: 0 };
+    let oldMemory = null;
+    while (i <= maxIterations) {
+      const { guess, memory } = guessingFunction(lastGuess, oldMemory);
+      oldMemory = memory;
+      lastGuess.guess = guess;
+      lastGuess.bulls = getNumberOfBulls(number, guess);
+      lastGuess.cows = getNumberOfCows(number, guess);
+      if (lastGuess.guess === number) break;
+      i++;
+    }
+    return { foundNumber: lastGuess.guess === number, numGuesses: i };
+  } catch (error: any) {
+    return { foundNumber: false, numGuesses: Infinity, error };
   }
 }
 

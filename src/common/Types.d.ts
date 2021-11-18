@@ -9,6 +9,7 @@ declare namespace Types {
   type AppState = {
     options: OptionsState;
     round: RoundState;
+    guessingFunction: GuessingFunction | null;
     history: HistoryEntry[];
   };
 
@@ -21,14 +22,16 @@ declare namespace Types {
     number: string;
     correctGuess: boolean;
     guess: string;
-    guessingFunction: GuessingFunction
     numGuesses: number;
     message: string;
-    bulls: number,
-    cows: number
+    bulls: number;
+    cows: number;
   };
 
-  type GuessingFunction<T> = (bullAndCows:{bulls:number, cows:number}, memory: T) => {guess:string, memory: T}
+  type GuessingFunction = (
+    lastGuess: { guess: string; bulls: number; cows: number },
+    memory: any
+  ) => { guess: string; memory: any };
 
   type DifficultyLevel = "Easy" | "Medium" | "PROg(r)amer";
 
@@ -37,7 +40,9 @@ declare namespace Types {
   type DispatchAction =
     | { type: "options"; options: Partial<OptionsState> }
     | { type: "round"; round: Partial<RoundState> }
-    | { type: "history"; history: HistoryEntry[] };
+    | { type: "history"; history: HistoryEntry[] }
+    | { type: "handleGuessFunctionSubmit"; guessFunction: GuessingFunction }
+    | { type: "resetGuessFunction" };
 }
 
 export = Types;
