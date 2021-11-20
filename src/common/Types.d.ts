@@ -6,10 +6,12 @@ declare namespace Types {
     difficultyLevel: DifficultyLevel;
   };
 
+  type AppHistory = HistoryEntry []
+
   type AppState = {
     options: OptionsState;
     round: RoundState;
-    history: HistoryEntry[];
+    history: AppHistory;
   };
 
   type OptionsState = {
