@@ -3,7 +3,6 @@ import React, {
   FC,
   ReactElement,
   useLayoutEffect,
-  useEffect,
 } from "react";
 import "./App.css";
 import {
@@ -12,6 +11,7 @@ import {
   DifficultyLevel,
   GuessingFunction,
   GuessingFunctionRunnerResponse,
+  AppHistory,
 } from "../../common/Types";
 import History from "../History/History";
 import Description from "../Description/Description";
@@ -45,46 +45,12 @@ const App: FC<Partial<AppState>> = ({
     dispatch({ type: "history", history });
   }, []);
 
-  /*   useEffect(() => {
-    console.log(state.guessingFunction)
-    if (state.guessingFunction) {
-      const result = runGuessingFunction(
-        state.guessingFunction,
-        state.round.number
-      );
-      if ("error" in result) {
-        dispatch({
-          type: "round",
-          round: { message: result.error.toString() },
-        });
-      } else {
-        if (result.foundNumber) {
-          dispatch({
-            type: "round",
-            round: {
-              numGuesses: result.numGuesses,
-              message: `Your Function needed ${result.numGuesses} guesses to find the number`,
-              correctGuess: true,
-              guess: state.round.number
-            },
-          });
-        } else {
-          dispatch({
-            type: "round",
-            round: {
-              message: `Your Function has not found the correct Number after ${result.numGuesses} guesses. Try changing it.`,
-            },
-          });
-        }
-      }
-    }
-  }, [state.guessingFunction, state.round.number]); */
-
   return (
     <div className="App">
       <Description />
       <Options
         disabled={state.round.numGuesses > 0}
+        previousPlayers={getPreviousPlayers(state.history)}
         optionState={state.options}
         setOptions={(options) => {
           dispatch({ type: "options", options });
@@ -221,6 +187,14 @@ function handleGuessFunctionSubmit(
       });
     }
   }, 5000);
+}
+
+function getPreviousPlayers(history: AppHistory){
+  const previousPlayers:string[] = []
+  for (const entry of history) {
+    if(!previousPlayers.includes(entry.playerName)) previousPlayers.push(entry.playerName)
+  }
+  return previousPlayers
 }
 
 function reducer(oldState: AppState, action: DispatchAction): AppState {
