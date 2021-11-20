@@ -3,24 +3,32 @@ import { DifficultyLevel, OptionsState } from "../../common/Types";
 import "./Options.css";
 
 const Options: FC<{
-  disabled: boolean,
-  setOptions: (arg: Partial<OptionsState>) => void
+  disabled: boolean;
+  setOptions: (arg: Partial<OptionsState>) => void;
   optionState: OptionsState;
-}> = ({ disabled, optionState:{playerName, difficultyLevel}, setOptions}): ReactElement => {
+  previousPlayers: string[];
+}> = ({
+  disabled,
+  optionState: { playerName, difficultyLevel },
+  setOptions,
+  previousPlayers
+}): ReactElement => {
   const difficultyListId = "difficultyLevels";
   return (
     <section className="Options">
       <label htmlFor="playerName">
         Player Name:
         <input
+          list="playerNames"
           type="text"
           name="playerName"
           value={playerName}
-          onChange={(event) =>
-            setOptions({playerName: event.target.value})
-          }
+          onChange={(event) => setOptions({ playerName: event.target.value })}
           disabled={disabled}
         />
+        <datalist id="playerNames">
+          {previousPlayers.map((playerName)=><option value={playerName}></option>)}
+        </datalist>
       </label>
       <label htmlFor="difficulty">
         Difficulty:
