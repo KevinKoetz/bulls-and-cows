@@ -27,7 +27,7 @@ const Options: FC<{
           disabled={disabled}
         />
         <datalist id="playerNames">
-          {previousPlayers.map((playerName)=><option value={playerName}></option>)}
+          {previousPlayers.map((playerName, index)=><option key={index} value={playerName}></option>)}
         </datalist>
       </label>
       <label htmlFor="difficulty">
