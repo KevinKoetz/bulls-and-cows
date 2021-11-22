@@ -19,10 +19,10 @@ import Options from "../Options/Options";
 import GuessInterface from "../GuessInterface/GuessInterface";
 import GuessFunctionRunner from "../../common/guessingFunctionRunner";
 
-const App: FC<Partial<AppState>> = ({
-  options: defaultOptions = { playerName: "Stranger", difficultyLevel: "Easy" },
-  round: defaultRound = {
-    number: generateNumber(defaultOptions.difficultyLevel),
+const initialAppState: AppState = {
+  options: { playerName: "Stranger", difficultyLevel: "Easy" },
+  round: {
+    number: generateNumber("Easy"),
     correctGuess: false,
     guess: "",
     numGuesses: 0,
@@ -31,17 +31,15 @@ const App: FC<Partial<AppState>> = ({
     cows: 0,
     guessFunctionBody: "",
   },
-  history: defaultHistory = [],
-}): ReactElement => {
-  const [state, dispatch] = useReducer(reducer, {
-    options: defaultOptions,
-    round: defaultRound,
-    history: defaultHistory,
-  });
+  history: []
+}
 
+const App: FC = (): ReactElement => {
+  const [state, dispatch] = useReducer(reducer, initialAppState);
+
+  //Load the old History from Local Storage on first Render
   useLayoutEffect(() => {
-    const historyString = localStorage.getItem("history");
-    const history = historyString ? JSON.parse(historyString) : [];
+    const history = getHistoryFromLocalStorage()
     dispatch({ type: "history", history });
   }, []);
 
@@ -54,13 +52,6 @@ const App: FC<Partial<AppState>> = ({
         optionState={state.options}
         setOptions={(options) => {
           dispatch({ type: "options", options });
-          if ("difficultyLevel" in options)
-            dispatch({
-              type: "round",
-              round: {
-                number: generateNumber(options.difficultyLevel ?? "Easy"),
-              },
-            });
         }}
       />
       <GuessInterface
@@ -107,7 +98,7 @@ const App: FC<Partial<AppState>> = ({
           dispatch({
             type: "round",
             round: {
-              ...defaultRound,
+              ...initialAppState.round,
               number: generateNumber(state.options.difficultyLevel),
             },
           });
@@ -135,6 +126,11 @@ const App: FC<Partial<AppState>> = ({
     </div>
   );
 };
+
+function getHistoryFromLocalStorage(): AppHistory{
+  const historyString = localStorage.getItem("history");
+  return historyString ? JSON.parse(historyString) : [];
+}
 
 function handleGuessFunctionSubmit(
   dispatch: React.Dispatch<DispatchAction>,
@@ -198,12 +194,16 @@ function getPreviousPlayers(history: AppHistory){
 }
 
 function reducer(oldState: AppState, action: DispatchAction): AppState {
+  let newState = {...oldState};
   switch (action.type) {
+
     case "options":
-      return {
-        ...oldState,
-        options: { ...oldState.options, ...action.options },
-      };
+      newState.options = {...oldState.options, ...action.options}
+      if(oldState.options.difficultyLevel !== newState.options.difficultyLevel){
+        newState.round.number = generateNumber(newState.options.difficultyLevel);
+      }
+      return newState;
+
     case "round":
       return {
         ...oldState,
@@ -212,10 +212,13 @@ function reducer(oldState: AppState, action: DispatchAction): AppState {
           ...action.round,
         },
       };
+
     case "history":
       return { ...oldState, history: action.history };
+
     default:
       return oldState;
+      
   }
 }
 
