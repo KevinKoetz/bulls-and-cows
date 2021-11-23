@@ -42,6 +42,9 @@ const GuessInterface: FC<{
             onChange={(e) => setGuessFunctionBody(e.target.value)}
             value={guessFunctionBody}
             disabled={disabled}
+            placeholder={
+              '//Brute Force Example\nif(lastGuess.guess === "") result.guess = "0000" \nresult.guess = String(Number(lastGuess.guess) + 1).padStart(4,"0")'
+            }
           ></textarea>
           {"return result:{guess: string, memory: any}"}
           <br />
