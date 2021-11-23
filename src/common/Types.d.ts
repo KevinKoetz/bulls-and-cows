@@ -6,7 +6,7 @@ declare namespace Types {
     difficultyLevel: DifficultyLevel;
   };
 
-  type AppHistory = HistoryEntry []
+  type AppHistory = HistoryEntry[];
 
   type AppState = {
     options: OptionsState;
@@ -49,10 +49,14 @@ declare namespace Types {
 
   type GuessingFunctionRunnerMessage =
     | { type: "ping" }
-    | { type: "runFunction", payload:{functionBody: string, number: string} };
+    | {
+        type: "runFunction";
+        payload: { functionBody: string; number: string };
+      };
   type GuessingFunctionRunnerResponse =
     | { type: "pong" }
-    | { type: "result", correctGuess: boolean, numGuesses: number };
+    | { type: "result"; correctGuess: boolean; numGuesses: number }
+    | { type: "error"; error: string };
 }
 
 export = Types;

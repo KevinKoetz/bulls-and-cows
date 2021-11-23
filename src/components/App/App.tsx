@@ -1,9 +1,4 @@
-import React, {
-  useReducer,
-  FC,
-  ReactElement,
-  useLayoutEffect,
-} from "react";
+import React, { useReducer, FC, ReactElement, useLayoutEffect } from "react";
 import "./App.css";
 import {
   DispatchAction,
@@ -33,15 +28,15 @@ const initialAppState: AppState = {
     cows: 0,
     guessFunctionBody: "",
   },
-  history: []
-}
+  history: [],
+};
 
 const App: FC = (): ReactElement => {
   const [state, dispatch] = useReducer(reducer, initialAppState);
 
   //Load the old History from Local Storage on first Render
   useLayoutEffect(() => {
-    const history = getHistoryFromLocalStorage()
+    const history = getHistoryFromLocalStorage();
     dispatch({ type: "history", history });
   }, []);
 
@@ -130,7 +125,7 @@ const App: FC = (): ReactElement => {
   );
 };
 
-function getHistoryFromLocalStorage(): AppHistory{
+function getHistoryFromLocalStorage(): AppHistory {
   const historyString = localStorage.getItem("history");
   return historyString ? JSON.parse(historyString) : [];
 }
@@ -140,13 +135,13 @@ function handleGuessFunctionSubmit(
   number: string,
   guessFunctionBody: string
 ) {
-  dispatch({type: "round", round: {evaluatingFunction: true}})
+  dispatch({ type: "round", round: { evaluatingFunction: true } });
   const code = GuessFunctionRunner.toString();
   const blob = new Blob(["(" + code + ")()"]);
   const worker = new Worker(URL.createObjectURL(blob));
   let receivedMsg = false;
   worker.onmessage = (msg) => {
-    dispatch({type: "round", round: {evaluatingFunction: false}})
+    dispatch({ type: "round", round: { evaluatingFunction: false } });
     receivedMsg = true;
     const data = msg.data as GuessingFunctionRunnerResponse;
     switch (data.type) {
@@ -170,8 +165,15 @@ function handleGuessFunctionSubmit(
           });
         }
         break;
+      case "error":
+        dispatch({
+          type: "round",
+          round: {
+            message: data.error,
+          },
+        });
     }
-    worker.terminate()
+    worker.terminate();
   };
   worker.postMessage({
     type: "runFunction",
@@ -179,8 +181,8 @@ function handleGuessFunctionSubmit(
   });
   setTimeout(() => {
     if (!receivedMsg) {
-      dispatch({type: "round", round: {evaluatingFunction: false}})
-      worker.terminate()
+      dispatch({ type: "round", round: { evaluatingFunction: false } });
+      worker.terminate();
       dispatch({
         type: "round",
         round: {
@@ -191,22 +193,26 @@ function handleGuessFunctionSubmit(
   }, 5000);
 }
 
-function getPreviousPlayers(history: AppHistory){
-  const previousPlayers:string[] = []
+function getPreviousPlayers(history: AppHistory) {
+  const previousPlayers: string[] = [];
   for (const entry of history) {
-    if(!previousPlayers.includes(entry.playerName)) previousPlayers.push(entry.playerName)
+    if (!previousPlayers.includes(entry.playerName))
+      previousPlayers.push(entry.playerName);
   }
-  return previousPlayers
+  return previousPlayers;
 }
 
 function reducer(oldState: AppState, action: DispatchAction): AppState {
-  let newState = {...oldState};
+  let newState = { ...oldState };
   switch (action.type) {
-
     case "options":
-      newState.options = {...oldState.options, ...action.options}
-      if(oldState.options.difficultyLevel !== newState.options.difficultyLevel){
-        newState.round.number = generateNumber(newState.options.difficultyLevel);
+      newState.options = { ...oldState.options, ...action.options };
+      if (
+        oldState.options.difficultyLevel !== newState.options.difficultyLevel
+      ) {
+        newState.round.number = generateNumber(
+          newState.options.difficultyLevel
+        );
       }
       return newState;
 
@@ -224,7 +230,6 @@ function reducer(oldState: AppState, action: DispatchAction): AppState {
 
     default:
       return oldState;
-      
   }
 }
 

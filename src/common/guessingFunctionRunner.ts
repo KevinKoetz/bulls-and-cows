@@ -1,25 +1,32 @@
 /// <reference lib="WebWorker" />
-import { GuessingFunctionRunnerMessage, GuessingFunction} from "./Types";
+import { GuessingFunctionRunnerMessage, GuessingFunction } from "./Types";
 declare const self: Worker;
 // export empty type because of tsc --isolatedModules flag
 const worker = () => {
-
-
-self.onmessage = (msg) => {
+  self.onmessage = (msg) => {
     const data = msg.data as GuessingFunctionRunnerMessage;
-    switch(data.type){
-        case "ping":
-            self.postMessage({type: "pong"})
+    switch (data.type) {
+      case "ping":
+        self.postMessage({ type: "pong" });
         break;
-        case "runFunction":
-            const guessFunction = createGuessFunction(data.payload.functionBody)
-            const result = runGuessingFunction(guessFunction, data.payload.number)
-            self.postMessage({type:"result", correctGuess: result.foundNumber, numGuesses: result.numGuesses})
+      case "runFunction":
+        const guessFunction = createGuessFunction(data.payload.functionBody);
+        const result = runGuessingFunction(guessFunction, data.payload.number);
+        if (result.type === "success")
+          self.postMessage({
+            type: "result",
+            correctGuess: result.foundNumber,
+            numGuesses: result.numGuesses,
+          });
+        if(result.type === "error")
+        self.postMessage({
+          type: "error",
+          error: result.error.toString()
+        });
     }
-}
+  };
 
-
-function createGuessFunction(guessFunctionBody: string) {
+  function createGuessFunction(guessFunctionBody: string) {
     return (
       lastGuess: { guess: string; bulls: number; cows: number },
       memory: any
@@ -29,9 +36,9 @@ function createGuessFunction(guessFunctionBody: string) {
       eval(guessFunctionBody);
       return result;
     };
-}
+  }
 
-function runGuessingFunction(
+  function runGuessingFunction(
     guessingFunction: GuessingFunction,
     number: string
   ) {
@@ -49,13 +56,17 @@ function runGuessingFunction(
         if (lastGuess.guess === number) break;
         i++;
       }
-      return { foundNumber: lastGuess.guess === number, numGuesses: i };
+      return {
+        type: "success",
+        foundNumber: lastGuess.guess === number,
+        numGuesses: i,
+      };
     } catch (error: any) {
-      return { foundNumber: false, numGuesses: Infinity, error };
+      return { type: "error", error };
     }
-}
+  }
 
-function getNumberOfBulls(number: string, guess: string) {
+  function getNumberOfBulls(number: string, guess: string) {
     let result = 0;
     for (let i = 0; i < guess.length; i++) {
       const digit = guess[i];
@@ -63,7 +74,7 @@ function getNumberOfBulls(number: string, guess: string) {
     }
     return result;
   }
-  
+
   function getNumberOfCows(number: string, guess: string) {
     let result = 0;
     for (let i = 0; i < guess.length; i++) {
@@ -72,6 +83,6 @@ function getNumberOfBulls(number: string, guess: string) {
     }
     return result;
   }
-}
+};
 
-export default worker
+export default worker;
