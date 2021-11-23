@@ -20,6 +20,7 @@ declare namespace Types {
   };
 
   type RoundState = {
+    evaluatingFunction: boolean;
     number: string;
     correctGuess: boolean;
     guess: string;

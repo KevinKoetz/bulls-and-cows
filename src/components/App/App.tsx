@@ -18,10 +18,12 @@ import Description from "../Description/Description";
 import Options from "../Options/Options";
 import GuessInterface from "../GuessInterface/GuessInterface";
 import GuessFunctionRunner from "../../common/guessingFunctionRunner";
+import Loader from "../Loader/Loader";
 
 const initialAppState: AppState = {
   options: { playerName: "Stranger", difficultyLevel: "Easy" },
   round: {
+    evaluatingFunction: false,
     number: generateNumber("Easy"),
     correctGuess: false,
     guess: "",
@@ -45,9 +47,10 @@ const App: FC = (): ReactElement => {
 
   return (
     <div className="App">
+      {state.round.evaluatingFunction ? <Loader /> : null}
       <Description />
       <Options
-        disabled={state.round.numGuesses > 0}
+        disabled={state.round.numGuesses > 0 || state.round.evaluatingFunction}
         previousPlayers={getPreviousPlayers(state.history)}
         optionState={state.options}
         setOptions={(options) => {
@@ -58,7 +61,7 @@ const App: FC = (): ReactElement => {
         difficultyLevel={state.options.difficultyLevel}
         guessState={state.round.guess}
         setGuess={(guess) => dispatch({ type: "round", round: { guess } })}
-        disabled={state.round.correctGuess}
+        disabled={state.round.correctGuess || state.round.evaluatingFunction}
         onSubmitGuessFunction={() =>
           handleGuessFunctionSubmit(
             dispatch,
@@ -92,7 +95,7 @@ const App: FC = (): ReactElement => {
       <input
         type="button"
         value="New Round"
-        disabled={!state.round.correctGuess}
+        disabled={!state.round.correctGuess || state.round.evaluatingFunction}
         onClick={() => {
           dispatch({ type: "resetGuessFunction" });
           dispatch({
@@ -137,11 +140,13 @@ function handleGuessFunctionSubmit(
   number: string,
   guessFunctionBody: string
 ) {
+  dispatch({type: "round", round: {evaluatingFunction: true}})
   const code = GuessFunctionRunner.toString();
   const blob = new Blob(["(" + code + ")()"]);
   const worker = new Worker(URL.createObjectURL(blob));
   let receivedMsg = false;
   worker.onmessage = (msg) => {
+    dispatch({type: "round", round: {evaluatingFunction: false}})
     receivedMsg = true;
     const data = msg.data as GuessingFunctionRunnerResponse;
     switch (data.type) {
@@ -174,6 +179,7 @@ function handleGuessFunctionSubmit(
   });
   setTimeout(() => {
     if (!receivedMsg) {
+      dispatch({type: "round", round: {evaluatingFunction: false}})
       worker.terminate()
       dispatch({
         type: "round",
