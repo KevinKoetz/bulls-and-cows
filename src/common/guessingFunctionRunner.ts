@@ -11,18 +11,32 @@ const worker = () => {
         break;
       case "runFunction":
         const guessFunction = createGuessFunction(data.payload.functionBody);
-        const result = runGuessingFunction(guessFunction, data.payload.number);
+        let averageGuesses = 0;
+        let result: {
+          type: "success",
+          foundNumber: boolean
+          numGuesses: number
+        } | { type: "error", error: any } = { type: "error", error: new Error("should never happen") };
+        for (let counter = 0; counter < 1000; counter++) {
+          result = runGuessingFunction(guessFunction, generateNumber());
+          if(result.type === "error") break;
+          if(result.type === "success" && result.foundNumber === false) break;
+          averageGuesses += result.numGuesses
+        }
+        averageGuesses = averageGuesses / 1000
+        
+
         if (result.type === "success")
           self.postMessage({
             type: "result",
             correctGuess: result.foundNumber,
-            numGuesses: result.numGuesses,
+            numGuesses: result.foundNumber ? Math.floor(averageGuesses) : 10000,
           });
-        if(result.type === "error")
-        self.postMessage({
-          type: "error",
-          error: result.error.toString()
-        });
+        if (result.type === "error")
+          self.postMessage({
+            type: "error",
+            error: result.error.toString(),
+          });
     }
   };
 
@@ -41,7 +55,11 @@ const worker = () => {
   function runGuessingFunction(
     guessingFunction: GuessingFunction,
     number: string
-  ) {
+  ): {
+    type: "success",
+    foundNumber: boolean
+    numGuesses: number
+  } | { type: "error", error: any } {
     try {
       const maxIterations = 10000;
       let i = 1;
@@ -82,6 +100,15 @@ const worker = () => {
       if (number.includes(digit) && digit !== number[i]) result++;
     }
     return result;
+  }
+
+  function generateNumber() {
+    const digits: number[] = [];
+    while (digits.length < 4) {
+      const digit = Math.floor(Math.random() * 10);
+      digits.push(digit);
+    }
+    return digits.join("");
   }
 };
 

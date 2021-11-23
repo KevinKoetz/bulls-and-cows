@@ -151,7 +151,7 @@ function handleGuessFunctionSubmit(
             type: "round",
             round: {
               numGuesses: data.numGuesses,
-              message: `Your Function needed ${data.numGuesses} guesses to find the number`,
+              message: `Your Function needed ${data.numGuesses} guesses on average to find the number`,
               correctGuess: true,
               guess: number,
             },

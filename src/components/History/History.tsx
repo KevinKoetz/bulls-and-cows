@@ -24,7 +24,7 @@ const History: FC<{ history: HistoryEntry[]; playerName?: string ,difficultyLeve
             return (
               <li
                 key={index}
-              >{`${entry.playerName} wrote a function that required ${entry.numGuesses} guesses to guess the number ${entry.number}`}</li>
+              >{`${entry.playerName} wrote a function that required ${entry.numGuesses} guesses on average to guess a random number.`}</li>
             );
           return undefined
         })}
